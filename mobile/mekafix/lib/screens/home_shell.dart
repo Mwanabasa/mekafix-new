@@ -6,6 +6,7 @@ import 'package:mekafix/screens/search_screen.dart';
 import 'package:mekafix/state/jobs_state.dart';
 import 'package:mekafix/state/mechanic_state.dart';
 import 'package:mekafix/state/session.dart';
+import 'package:mekafix/theme.dart';
 import 'package:provider/provider.dart';
 
 class HomeShell extends StatefulWidget {
@@ -30,22 +31,42 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<SessionState>().user!;
-    final pages = user.isMechanic
+    final isMechanic = user.isMechanic;
+    final pages = isMechanic
         ? const [MechanicInboxScreen(), SearchScreen(), ProfileScreen()]
         : const [SearchScreen(), JobsScreen(), ProfileScreen()];
-    final destinations = user.isMechanic
+    final destinations = isMechanic
         ? const [
-            NavigationDestination(icon: Icon(Icons.handyman_outlined), label: 'Jobs'),
-            NavigationDestination(icon: Icon(Icons.map_outlined), label: 'Map'),
-            NavigationDestination(icon: Icon(Icons.person_outline), label: 'Profile'),
+            NavigationDestination(
+                icon: Icon(Icons.inbox_outlined),
+                selectedIcon: Icon(Icons.inbox_rounded),
+                label: 'Work'),
+            NavigationDestination(
+                icon: Icon(Icons.explore_outlined),
+                selectedIcon: Icon(Icons.explore_rounded),
+                label: 'Explore'),
+            NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Account'),
           ]
         : const [
-            NavigationDestination(icon: Icon(Icons.search), label: 'Find help'),
-            NavigationDestination(icon: Icon(Icons.assignment_outlined), label: 'Requests'),
-            NavigationDestination(icon: Icon(Icons.person_outline), label: 'Me'),
+            NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home_rounded),
+                label: 'Home'),
+            NavigationDestination(
+                icon: Icon(Icons.receipt_long_outlined),
+                selectedIcon: Icon(Icons.receipt_long_rounded),
+                label: 'My requests'),
+            NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded),
+                selectedIcon: Icon(Icons.person_rounded),
+                label: 'Account'),
           ];
+
     return Scaffold(
-      body: pages[index],
+      body: IndexedStack(index: index, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: index,
         destinations: destinations,
