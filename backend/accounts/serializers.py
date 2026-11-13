@@ -29,6 +29,9 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(min_length=4, write_only=True)
     role = serializers.ChoiceField(choices=User.Role.choices, default=User.Role.OWNER)
     garage_name = serializers.CharField(required=False, allow_blank=True)
+    garage_type = serializers.ChoiceField(choices=[("standard", "Standard"), ("specialist", "Specialist")], required=False)
+    supported_vehicle_types = serializers.ListField(child=serializers.CharField(), required=False)
+    qualifications = serializers.CharField(required=False, allow_blank=True)
     services = serializers.ListField(child=serializers.CharField(), required=False)
     address = serializers.CharField(required=False, allow_blank=True)
     latitude = serializers.FloatField(required=False)
@@ -47,6 +50,9 @@ class RegisterSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         garage_name = validated_data.pop("garage_name", "")
+        garage_type = validated_data.pop("garage_type", "standard")
+        supported_vehicle_types = validated_data.pop("supported_vehicle_types", [])
+        qualifications = validated_data.pop("qualifications", "")
         services = validated_data.pop("services", [])
         address = validated_data.pop("address", "")
         latitude = validated_data.pop("latitude", None)
@@ -67,6 +73,9 @@ class RegisterSerializer(serializers.Serializer):
                 latitude=latitude if latitude is not None else 0.3476,
                 longitude=longitude if longitude is not None else 32.5825,
                 is_verified=False,
+                garage_type=garage_type,
+                supported_vehicle_types=supported_vehicle_types,
+                qualifications=qualifications,
             )
         return user
 

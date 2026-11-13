@@ -3,15 +3,17 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from jobs.models import Payment, Rating, ServiceRequest, Vehicle
+from jobs.models import JobDecline, Payment, Rating, ServiceRecord, ServiceRecordShare, ServiceRequest, Vehicle
 from jobs.serializers import (
     PaymentSerializer,
     RatingSerializer,
     ServiceRequestSerializer,
     VehicleSerializer,
+    ServiceRecordSerializer,
 )
 from mechanics.models import MechanicProfile
 from notifications.services import notify_user
@@ -32,7 +34,9 @@ class ServiceRequestListCreateView(generics.ListCreateAPIView):
         qs = ServiceRequest.objects.select_related("mechanic", "vehicle", "customer", "rating", "payment")
         if user.role == "mechanic":
             profile = MechanicProfile.objects.filter(user=user).first()
-            return qs.filter(mechanic=profile) if profile else qs.none()
+            if not profile or not profile.is_verified or not profile.is_available:
+                return qs.none()
+            return qs.filter(Q(mechanic=profile) | Q(status=ServiceRequest.Status.PENDING, mechanic__isnull=True)).exclude(declines__mechanic=profile).distinct()
         if user.role == "admin":
             return qs.all()
         return qs.filter(customer=user)
@@ -63,10 +67,14 @@ class AcceptJobView(APIView):
     def post(self, request, pk):
         job = get_object_or_404(ServiceRequest.objects.select_related("mechanic", "customer"), pk=pk)
         profile = MechanicProfile.objects.filter(user=request.user).first()
-        if not profile:
-            return Response({"detail": "Only mechanics can accept jobs."}, status=status.HTTP_403_FORBIDDEN)
+        if not profile or not profile.is_verified:
+            return Response({"detail": "Only verified mechanics can accept jobs."}, status=status.HTTP_403_FORBIDDEN)
+        if not profile.is_available:
+            return Response({"detail": "Set your business to available before accepting jobs."}, status=status.HTTP_400_BAD_REQUEST)
         if job.status != ServiceRequest.Status.PENDING:
             return Response({"detail": "Only pending jobs can be accepted."}, status=status.HTTP_400_BAD_REQUEST)
+        if job.declines.filter(mechanic=profile).exists():
+            return Response({"detail": "You previously declined this request."}, status=status.HTTP_403_FORBIDDEN)
         if job.mechanic and job.mechanic != profile:
             return Response({"detail": "This job is assigned to another mechanic."}, status=status.HTTP_403_FORBIDDEN)
         job.mechanic = profile
@@ -81,6 +89,67 @@ class AcceptJobView(APIView):
             channels=["push", "sms"],
         )
         return Response(ServiceRequestSerializer(job, context={"request": request}).data)
+
+
+class RejectJobView(APIView):
+    def post(self, request, pk):
+        job = get_object_or_404(ServiceRequest, pk=pk, status=ServiceRequest.Status.PENDING)
+        profile = MechanicProfile.objects.filter(user=request.user).first()
+        if not profile:
+            return Response({"detail": "Only mechanics can decline jobs."}, status=status.HTTP_403_FORBIDDEN)
+        if job.mechanic and job.mechanic != profile:
+            return Response({"detail": "This request belongs to another mechanic."}, status=status.HTTP_403_FORBIDDEN)
+        JobDecline.objects.get_or_create(request=job, mechanic=profile)
+        if job.mechanic_id == profile.id:
+            job.mechanic = None
+        job.save(update_fields=["mechanic", "updated_at"])
+        return Response({"detail": "Request declined. It is available to other eligible mechanics."})
+
+
+class ReassignJobView(APIView):
+    def post(self, request, pk):
+        job = get_object_or_404(ServiceRequest.objects.select_related("mechanic", "customer"), pk=pk, customer=request.user)
+        if job.status != ServiceRequest.Status.PENDING:
+            return Response({"detail": "Only unanswered pending requests can be reassigned."}, status=status.HTTP_400_BAD_REQUEST)
+        if job.mechanic_id:
+            old_profile = job.mechanic
+            old_mechanic = old_profile.user
+            JobDecline.objects.get_or_create(request=job, mechanic=old_profile)
+            job.mechanic = None
+            job.save(update_fields=["mechanic", "updated_at"])
+            notify_user(old_mechanic, title="Request reassigned", body=f"The driver has moved request #{job.pk} to another mechanic.", channels=["push"])
+        return Response(ServiceRequestSerializer(job, context={"request": request}).data)
+
+
+class ServiceRecordListCreateView(generics.ListCreateAPIView):
+    serializer_class = ServiceRecordSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = ServiceRecord.objects.select_related("vehicle", "mechanic", "service_request")
+        if user.role == "mechanic":
+            return qs.filter(Q(mechanic__user=user) | Q(shares__mechanic__user=user)).distinct()
+        return qs.filter(vehicle__owner=user, shared_with_owner=True)
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        if user.role != "mechanic":
+            raise ValidationError("Only mechanics can create service records.")
+        request_id = self.request.data.get("service_request")
+        job = get_object_or_404(ServiceRequest, pk=request_id, mechanic__user=user, status=ServiceRequest.Status.COMPLETED)
+        vehicle = job.vehicle
+        if vehicle is None:
+            raise ValidationError("The completed job must be linked to a vehicle before recording service notes.")
+        serializer.save(vehicle=vehicle, service_request=job)
+
+
+class ShareServiceRecordView(APIView):
+    def post(self, request, pk):
+        record = get_object_or_404(ServiceRecord, pk=pk, vehicle__owner=request.user)
+        mechanic_id = request.data.get("mechanic_profile_id")
+        profile = get_object_or_404(MechanicProfile, pk=mechanic_id, is_verified=True)
+        ServiceRecordShare.objects.get_or_create(record=record, mechanic=profile, defaults={"shared_by": request.user})
+        return Response({"detail": f"Service record shared with {profile.garage_name}."})
 
 
 class UpdateStatusView(APIView):

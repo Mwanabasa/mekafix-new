@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from jobs.models import Payment, Rating, ServiceRequest, Vehicle
+from jobs.models import JobDecline, Payment, Rating, ServiceRecord, ServiceRecordShare, ServiceRequest, Vehicle
 
 
 @admin.register(Vehicle)
@@ -22,3 +22,7 @@ class RatingAdmin(admin.ModelAdmin):
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ("request", "amount", "status", "reference")
+
+admin.site.register(ServiceRecord)
+admin.site.register(ServiceRecordShare)
+admin.site.register(JobDecline)

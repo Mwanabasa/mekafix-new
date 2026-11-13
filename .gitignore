@@ -1,0 +1,25 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.sqlite3
+.env
+.venv/
+venv/
+backend/staticfiles/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Vercel
+.vercel/
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/launch.json
+.DS_Store
+Thumbs.db

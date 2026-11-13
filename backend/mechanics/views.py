@@ -43,6 +43,11 @@ class NearbyMechanicsView(generics.ListAPIView):
         service = self.request.query_params.get("service")
         if service:
             qs = qs.filter(services__icontains=service)
+        garage_type = self.request.query_params.get("garage_type")
+        if garage_type in ("standard", "specialist"):
+            qs = qs.filter(garage_type=garage_type)
+            if garage_type == "specialist":
+                qs = qs.filter(specialist_approved=True)
         if self.request.query_params.get("available") == "1":
             qs = qs.filter(is_available=True)
         if self.request.query_params.get("roadside") == "1":

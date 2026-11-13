@@ -22,6 +22,12 @@ class MechanicProfile(models.Model):
     is_featured = models.BooleanField(default=False)
     bio = models.TextField(blank=True)
     roadside_supported = models.BooleanField(default=True)
+    garage_type = models.CharField(max_length=20, choices=[("standard", "Standard garage"), ("specialist", "Specialist garage")], default="standard")
+    supported_vehicle_types = models.JSONField(default=list, blank=True)
+    qualifications = models.TextField(blank=True)
+    specialist_approved = models.BooleanField(default=False)
+    business_hours = models.CharField(max_length=160, blank=True)
+    business_description = models.TextField(blank=True)
 
     def __str__(self):
         return self.garage_name

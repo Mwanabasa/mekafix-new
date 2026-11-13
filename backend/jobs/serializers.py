@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from jobs.models import Payment, Rating, ServiceRequest, Vehicle
+from jobs.models import Payment, Rating, ServiceRecord, ServiceRequest, Vehicle
 from mechanics.serializers import MechanicProfileSerializer
 
 
@@ -67,4 +67,24 @@ class ServiceRequestSerializer(serializers.ModelSerializer):
         if not validated_data.get("quoted_amount") and validated_data.get("mechanic"):
             mechanic = validated_data["mechanic"]
             validated_data["quoted_amount"] = mechanic.price_min
+        return super().create(validated_data)
+
+
+class ServiceRecordSerializer(serializers.ModelSerializer):
+    vehicle_label = serializers.SerializerMethodField()
+    mechanic_name = serializers.CharField(source="mechanic.garage_name", read_only=True)
+
+    class Meta:
+        model = ServiceRecord
+        fields = ("id", "vehicle", "vehicle_label", "mechanic", "mechanic_name", "service_request", "title", "odometer_km", "diagnosis", "work_done", "parts_used", "recommendations", "shared_with_owner", "created_at")
+        read_only_fields = ("id", "vehicle", "mechanic", "service_request", "created_at", "vehicle_label", "mechanic_name")
+
+    def get_vehicle_label(self, obj):
+        return f"{obj.vehicle.plate} · {obj.vehicle.make} {obj.vehicle.model}"
+
+    def create(self, validated_data):
+        request = self.context["request"]
+        if request.user.role == "mechanic":
+            from mechanics.models import MechanicProfile
+            validated_data["mechanic"] = MechanicProfile.objects.filter(user=request.user).first()
         return super().create(validated_data)

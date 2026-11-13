@@ -30,9 +30,15 @@ class MechanicProfileSerializer(serializers.ModelSerializer):
             "is_featured",
             "bio",
             "roadside_supported",
+            "garage_type",
+            "supported_vehicle_types",
+            "qualifications",
+            "specialist_approved",
+            "business_hours",
+            "business_description",
             "distance_km",
         )
-        read_only_fields = ("rating_avg", "rating_count", "is_verified", "is_featured")
+        read_only_fields = ("rating_avg", "rating_count", "is_verified", "is_featured", "specialist_approved")
 
     def get_distance_km(self, obj):
         origin = self.context.get("origin")

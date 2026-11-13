@@ -79,3 +79,48 @@ class Payment(models.Model):
     reference = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
+
+
+class ServiceRecord(models.Model):
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name="service_records")
+    mechanic = models.ForeignKey("mechanics.MechanicProfile", on_delete=models.SET_NULL, null=True, blank=True, related_name="service_records")
+    service_request = models.ForeignKey(ServiceRequest, on_delete=models.SET_NULL, null=True, blank=True, related_name="service_records")
+    title = models.CharField(max_length=160)
+    odometer_km = models.PositiveIntegerField(null=True, blank=True)
+    diagnosis = models.TextField(blank=True)
+    work_done = models.TextField()
+    parts_used = models.TextField(blank=True)
+    recommendations = models.TextField(blank=True)
+    shared_with_owner = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.vehicle.plate}: {self.title}"
+
+
+class JobDecline(models.Model):
+    request = models.ForeignKey(ServiceRequest, on_delete=models.CASCADE, related_name="declines")
+    mechanic = models.ForeignKey("mechanics.MechanicProfile", on_delete=models.CASCADE, related_name="declined_jobs")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("request", "mechanic")
+
+    def __str__(self):
+        return f"Mechanic {self.mechanic_id} declined request {self.request_id}"
+
+
+class ServiceRecordShare(models.Model):
+    record = models.ForeignKey(ServiceRecord, on_delete=models.CASCADE, related_name="shares")
+    mechanic = models.ForeignKey("mechanics.MechanicProfile", on_delete=models.CASCADE, related_name="shared_service_records")
+    shared_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_record_shares")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("record", "mechanic")
+
+    def __str__(self):
+        return f"Record {self.record_id} shared with mechanic {self.mechanic_id}"
