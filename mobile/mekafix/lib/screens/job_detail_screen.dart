@@ -3,6 +3,8 @@ import 'package:mekafix/models.dart';
 import 'package:mekafix/state/jobs_state.dart';
 import 'package:mekafix/state/session.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:mekafix/screens/route_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class JobDetailScreen extends StatelessWidget {
@@ -22,12 +24,32 @@ class JobDetailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text(job.status.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w800)),
+          Text(job.status.toUpperCase(),
+              style: const TextStyle(fontWeight: FontWeight.w800)),
           Text(job.description),
           Text(job.address),
           if (job.quoted != null) Text('Estimate: UGX ${job.quoted}'),
           const SizedBox(height: 12),
           if (session.user?.isMechanic == true) ...[
+            OutlinedButton.icon(
+                onPressed: () {
+                  final lat = (job.raw['latitude'] as num?)?.toDouble();
+                  final lon = (job.raw['longitude'] as num?)?.toDouble();
+                  if (lat == null || lon == null) return;
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => RouteScreen(
+                              origin:
+                                  LatLng(session.latitude, session.longitude),
+                              destination: LatLng(lat, lon),
+                              originLabel: 'Your location',
+                              destinationLabel: job.address.isEmpty
+                                  ? 'Driver location'
+                                  : job.address)));
+                },
+                icon: const Icon(Icons.route),
+                label: const Text('Show route to driver')),
             Wrap(
               spacing: 8,
               children: [
@@ -44,9 +66,49 @@ class JobDetailScreen extends StatelessWidget {
               label: Text('Call ${job.customerName}'),
             ),
           ] else ...[
+            if (job.status == 'pending' && job.mechanic != null)
+              FilledButton.tonalIcon(
+                  onPressed: () async {
+                    try {
+                      await jobs.findAnotherMechanic(job.id);
+                      if (context.mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                            content: Text(
+                                'Request released. Other available mechanics can now accept it.')));
+                    } catch (_) {
+                      if (context.mounted)
+                        ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Could not reassign this request.')));
+                    }
+                  },
+                  icon: const Icon(Icons.autorenew),
+                  label: const Text('Find another mechanic')),
+            if (job.mechanic != null)
+              OutlinedButton.icon(
+                  onPressed: () {
+                    final m = job.mechanic!;
+                    final lat = (m['latitude'] as num?)?.toDouble();
+                    final lon = (m['longitude'] as num?)?.toDouble();
+                    if (lat == null || lon == null) return;
+                    Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => RouteScreen(
+                                origin:
+                                    LatLng(session.latitude, session.longitude),
+                                destination: LatLng(lat, lon),
+                                originLabel: 'Your location',
+                                destinationLabel:
+                                    m['garage_name'] ?? 'Mechanic location')));
+                  },
+                  icon: const Icon(Icons.route),
+                  label: const Text('Track route to mechanic')),
             if (job.mechanic != null)
               FilledButton.icon(
-                onPressed: () => launchUrl(Uri.parse('tel:${job.mechanic?['user']?['phone'] ?? ''}')),
+                onPressed: () => launchUrl(
+                    Uri.parse('tel:${job.mechanic?['user']?['phone'] ?? ''}')),
                 icon: const Icon(Icons.call),
                 label: const Text('Call mechanic'),
               ),
@@ -61,7 +123,9 @@ class JobDetailScreen extends StatelessWidget {
                   await jobs.pay(job.id, job.quoted!, session.user!.phone);
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Mobile-money sandbox marked this job as paid.')),
+                      const SnackBar(
+                          content: Text(
+                              'Mobile-money sandbox marked this job as paid.')),
                     );
                   }
                 },
@@ -73,7 +137,8 @@ class JobDetailScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _rate(BuildContext context, JobsState jobs, JobRequest job) async {
+  Future<void> _rate(
+      BuildContext context, JobsState jobs, JobRequest job) async {
     final comment = TextEditingController();
     int stars = 5;
     await showDialog(
@@ -94,7 +159,9 @@ class JobDetailScreen extends StatelessWidget {
                   onChanged: (value) => setState(() => stars = value.round()),
                 ),
               ),
-              TextField(controller: comment, decoration: const InputDecoration(labelText: 'Comment')),
+              TextField(
+                  controller: comment,
+                  decoration: const InputDecoration(labelText: 'Comment')),
             ],
           ),
           actions: [

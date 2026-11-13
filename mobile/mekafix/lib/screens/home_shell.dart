@@ -6,7 +6,6 @@ import 'package:mekafix/screens/search_screen.dart';
 import 'package:mekafix/state/jobs_state.dart';
 import 'package:mekafix/state/mechanic_state.dart';
 import 'package:mekafix/state/session.dart';
-import 'package:mekafix/theme.dart';
 import 'package:provider/provider.dart';
 
 class HomeShell extends StatefulWidget {
@@ -23,6 +22,7 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       context.read<MechanicState>().search();
       context.read<JobsState>().refresh();
     });
@@ -30,7 +30,10 @@ class _HomeShellState extends State<HomeShell> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<SessionState>().user!;
+    final user = context.watch<SessionState>().user;
+    if (user == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
     final isMechanic = user.isMechanic;
     final pages = isMechanic
         ? const [MechanicInboxScreen(), SearchScreen(), ProfileScreen()]

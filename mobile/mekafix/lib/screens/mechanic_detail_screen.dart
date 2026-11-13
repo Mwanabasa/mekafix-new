@@ -16,7 +16,8 @@ class MechanicDetailScreen extends StatelessWidget {
         children: [
           Row(
             children: [
-              if (mechanic.isVerified) const Icon(Icons.verified, color: Color(0xFF0B6E4F)),
+              if (mechanic.isVerified)
+                const Icon(Icons.verified, color: Color(0xFF0B6E4F)),
               const SizedBox(width: 8),
               Text('${mechanic.ratingAvg}★ · ${mechanic.ratingCount} reviews'),
             ],
@@ -26,9 +27,15 @@ class MechanicDetailScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(mechanic.address),
           Text('Estimate: UGX ${mechanic.priceMin} – ${mechanic.priceMax}'),
-          if (mechanic.distanceKm != null) Text('About ${mechanic.distanceKm} km away'),
+          if (mechanic.distanceKm != null)
+            Text('About ${mechanic.distanceKm} km away'),
           const SizedBox(height: 12),
-          Wrap(spacing: 8, children: mechanic.services.map((s) => Chip(label: Text(s))).toList()),
+          Wrap(
+            spacing: 8,
+            children: mechanic.services
+                .map((service) => Chip(label: Text(service)))
+                .toList(),
+          ),
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: () => launchUrl(Uri.parse('tel:${mechanic.phone}')),
@@ -41,7 +48,8 @@ class MechanicDetailScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => RequestScreen(kind: 'roadside', mechanic: mechanic),
+                  builder: (_) =>
+                      RequestScreen(kind: 'roadside', mechanic: mechanic),
                 ),
               );
             },
@@ -53,7 +61,8 @@ class MechanicDetailScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => RequestScreen(kind: 'booking', mechanic: mechanic),
+                  builder: (_) =>
+                      RequestScreen(kind: 'booking', mechanic: mechanic),
                 ),
               );
             },

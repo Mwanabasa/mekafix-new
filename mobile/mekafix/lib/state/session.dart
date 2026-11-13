@@ -61,7 +61,7 @@ class SessionState extends ChangeNotifier {
       }
       notifyListeners();
     } catch (_) {
-      // Keep Makerere fallback coordinates from the field study.
+      // Keep the default coordinates when location is unavailable.
     }
   }
 
@@ -84,7 +84,7 @@ class SessionState extends ChangeNotifier {
       });
       await _storeAuth(response.data);
       return true;
-    } catch (e) {
+    } catch (_) {
       error = 'Could not sign in. Check phone and password.';
       notifyListeners();
       return false;
@@ -112,7 +112,7 @@ class SessionState extends ChangeNotifier {
       });
       await _storeAuth(response.data);
       return true;
-    } catch (e) {
+    } catch (_) {
       error = 'Registration failed. That phone may already be in use.';
       notifyListeners();
       return false;

@@ -13,11 +13,13 @@ void main() {
         ChangeNotifierProvider(create: (_) => SessionState()..bootstrap()),
         ChangeNotifierProxyProvider<SessionState, MechanicState>(
           create: (_) => MechanicState(),
-          update: (_, session, previous) => (previous ?? MechanicState())..bind(session),
+          update: (_, session, previous) =>
+              (previous ?? MechanicState())..bind(session),
         ),
         ChangeNotifierProxyProvider<SessionState, JobsState>(
           create: (_) => JobsState(),
-          update: (_, session, previous) => (previous ?? JobsState())..bind(session),
+          update: (_, session, previous) =>
+              (previous ?? JobsState())..bind(session),
         ),
       ],
       child: const MekaFixApp(),

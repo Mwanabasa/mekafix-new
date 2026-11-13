@@ -25,11 +25,16 @@ class _RequestScreenState extends State<RequestScreen> {
     final session = context.watch<SessionState>();
     final jobs = context.watch<JobsState>();
     return Scaffold(
-      appBar: AppBar(title: Text(widget.kind == 'roadside' ? 'Roadside assistance' : 'Book appointment')),
+      appBar: AppBar(
+          title: Text(widget.kind == 'roadside'
+              ? 'Roadside assistance'
+              : 'Book appointment')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          if (widget.mechanic != null) Text('Mechanic: ${widget.mechanic!.garageName}', style: const TextStyle(fontWeight: FontWeight.w700)),
+          if (widget.mechanic != null)
+            Text('Mechanic: ${widget.mechanic!.garageName}',
+                style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 12),
           TextField(
             controller: description,
@@ -39,14 +44,17 @@ class _RequestScreenState extends State<RequestScreen> {
           const SizedBox(height: 12),
           TextField(
             controller: address,
-            decoration: const InputDecoration(labelText: 'Location description'),
+            decoration:
+                const InputDecoration(labelText: 'Location description'),
           ),
           const SizedBox(height: 12),
           if (jobs.vehicles.isNotEmpty)
             DropdownButtonFormField<int>(
               initialValue: vehicleId ?? jobs.vehicles.first['id'] as int,
               items: jobs.vehicles
-                  .map((v) => DropdownMenuItem(value: v['id'] as int, child: Text('${v['plate']} ${v['make']}')))
+                  .map((v) => DropdownMenuItem(
+                      value: v['id'] as int,
+                      child: Text('${v['plate']} ${v['make']}')))
                   .toList(),
               onChanged: (value) => setState(() => vehicleId = value),
               decoration: const InputDecoration(labelText: 'Vehicle'),
@@ -63,11 +71,16 @@ class _RequestScreenState extends State<RequestScreen> {
                 );
                 if (date == null) return;
                 if (!context.mounted) return;
-                final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 9, minute: 0));
+                final time = await showTimePicker(
+                    context: context,
+                    initialTime: const TimeOfDay(hour: 9, minute: 0));
                 if (time == null) return;
-                setState(() => scheduled = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                setState(() => scheduled = DateTime(
+                    date.year, date.month, date.day, time.hour, time.minute));
               },
-              child: Text(scheduled == null ? 'Pick appointment time' : scheduled.toString()),
+              child: Text(scheduled == null
+                  ? 'Pick appointment time'
+                  : scheduled.toString()),
             ),
           ],
           const SizedBox(height: 20),
@@ -83,27 +96,35 @@ class _RequestScreenState extends State<RequestScreen> {
                         'address': address.text.trim(),
                         'latitude': session.latitude,
                         'longitude': session.longitude,
-                        if (widget.mechanic != null) 'mechanic': widget.mechanic!.id,
+                        if (widget.mechanic != null)
+                          'mechanic': widget.mechanic!.id,
                         if (vehicleId != null) 'vehicle': vehicleId,
-                        if (scheduled != null) 'scheduled_at': scheduled!.toUtc().toIso8601String(),
+                        if (scheduled != null)
+                          'scheduled_at': scheduled!.toUtc().toIso8601String(),
                       });
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Request sent. You will get a push/SMS when it is accepted.')),
+                          const SnackBar(
+                              content: Text(
+                                  'Request sent. You will get a push/SMS when it is accepted.')),
                         );
                         Navigator.pop(context);
                       }
                     } catch (_) {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Could not send request. Check your connection.')),
+                          const SnackBar(
+                              content: Text(
+                                  'Could not send request. Check your connection.')),
                         );
                       }
                     } finally {
                       if (mounted) setState(() => busy = false);
                     }
                   },
-            child: Text(widget.kind == 'roadside' ? 'Share live location & request help' : 'Confirm booking'),
+            child: Text(widget.kind == 'roadside'
+                ? 'Share live location & request help'
+                : 'Confirm booking'),
           ),
         ],
       ),

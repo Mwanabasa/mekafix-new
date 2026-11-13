@@ -45,6 +45,9 @@ class Mechanic {
     required this.bio,
     required this.phone,
     this.distanceKm,
+    this.garageType = 'standard',
+    this.supportedVehicleTypes = const [],
+    this.specialistApproved = false,
   });
 
   final int id;
@@ -64,6 +67,9 @@ class Mechanic {
   final String bio;
   final String phone;
   final double? distanceKm;
+  final String garageType;
+  final List<String> supportedVehicleTypes;
+  final bool specialistApproved;
 
   factory Mechanic.fromJson(Map<String, dynamic> json) {
     final user = json['user'] as Map<String, dynamic>? ?? {};
@@ -85,6 +91,10 @@ class Mechanic {
       bio: json['bio'] as String? ?? '',
       phone: user['phone'] as String? ?? '',
       distanceKm: (json['distance_km'] as num?)?.toDouble(),
+      garageType: json['garage_type'] as String? ?? 'standard',
+      supportedVehicleTypes:
+          List<String>.from(json['supported_vehicle_types'] ?? const []),
+      specialistApproved: json['specialist_approved'] as bool? ?? false,
     );
   }
 }
@@ -101,7 +111,8 @@ class JobRequest {
   int? get quoted => raw['quoted_amount'] as int?;
   String get customerName => raw['customer_name'] as String? ?? '';
   String get customerPhone => raw['customer_phone'] as String? ?? '';
-  Map<String, dynamic>? get mechanic => raw['mechanic_detail'] as Map<String, dynamic>?;
+  Map<String, dynamic>? get mechanic =>
+      raw['mechanic_detail'] as Map<String, dynamic>?;
   Map<String, dynamic>? get rating => raw['rating'] as Map<String, dynamic>?;
   Map<String, dynamic>? get payment => raw['payment'] as Map<String, dynamic>?;
 }

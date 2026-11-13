@@ -11,13 +11,31 @@ class MechanicState extends ChangeNotifier {
   String query = '';
   String? error;
   bool fromCache = false;
+  bool _hasBoundSession = false;
+  int? _boundUserId;
+  int _sessionGeneration = 0;
 
   void bind(SessionState next) {
+    final userId = next.user?.id;
+    if (_hasBoundSession && _boundUserId != userId) {
+      _sessionGeneration++;
+      items = [];
+      loading = false;
+      error = null;
+      fromCache = false;
+    }
+    _hasBoundSession = true;
+    _boundUserId = userId;
     session = next;
   }
 
-  Future<void> search({String? service}) async {
-    if (session == null || !session!.isLoggedIn) return;
+  Future<void> search({String? service, String? garageType}) async {
+    final currentSession = session;
+    final user = currentSession?.user;
+    if (currentSession == null || !currentSession.isLoggedIn || user == null) {
+      return;
+    }
+    final generation = _sessionGeneration;
     loading = true;
     error = null;
     notifyListeners();
@@ -29,9 +47,12 @@ class MechanicState extends ChangeNotifier {
           'lng': session!.longitude,
           'radius_km': 15,
           if (service != null && service.isNotEmpty) 'service': service,
+          if (garageType != null && garageType.isNotEmpty)
+            'garage_type': garageType,
           'available': 1,
         },
       ).timeout(const Duration(seconds: 15));
+      if (generation != _sessionGeneration) return;
       items =
           (response.data as List).map((row) => Mechanic.fromJson(row)).toList();
       fromCache = false;
@@ -40,6 +61,7 @@ class MechanicState extends ChangeNotifier {
             .cacheMechanics(List<Map<String, dynamic>>.from(response.data));
       }
     } catch (_) {
+      if (generation != _sessionGeneration) return;
       if (kIsWeb) {
         error = 'Could not load mechanics. Check that the backend is running.';
       } else {
@@ -51,8 +73,10 @@ class MechanicState extends ChangeNotifier {
             : 'Could not load mechanics.';
       }
     } finally {
-      loading = false;
-      notifyListeners();
+      if (generation == _sessionGeneration) {
+        loading = false;
+        notifyListeners();
+      }
     }
   }
 }

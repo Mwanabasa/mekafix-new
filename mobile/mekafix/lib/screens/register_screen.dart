@@ -18,6 +18,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool busy = false;
 
   @override
+  void dispose() {
+    phone.dispose();
+    name.dispose();
+    password.dispose();
+    garage.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final session = context.watch<SessionState>();
     return Scaffold(
@@ -34,14 +43,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
             onSelectionChanged: (value) => setState(() => role = value.first),
           ),
           const SizedBox(height: 16),
-          TextField(controller: name, decoration: const InputDecoration(labelText: 'Full name')),
+          TextField(
+              controller: name,
+              decoration: const InputDecoration(labelText: 'Full name')),
           const SizedBox(height: 12),
-          TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone number')),
+          TextField(
+              controller: phone,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: 'Phone number')),
           const SizedBox(height: 12),
-          TextField(controller: password, obscureText: true, decoration: const InputDecoration(labelText: 'Password')),
+          TextField(
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password')),
           if (role == 'mechanic') ...[
             const SizedBox(height: 12),
-            TextField(controller: garage, decoration: const InputDecoration(labelText: 'Garage name')),
+            TextField(
+                controller: garage,
+                decoration: const InputDecoration(labelText: 'Garage name')),
           ],
           if (session.error != null) ...[
             const SizedBox(height: 12),
@@ -63,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (ok && context.mounted) Navigator.pop(context);
                     if (context.mounted) setState(() => busy = false);
                   },
-            child: const Text('Register with phone'),
+            child: Text(busy ? 'Creating account...' : 'Register with phone'),
           ),
         ],
       ),
